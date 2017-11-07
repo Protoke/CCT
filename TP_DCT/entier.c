@@ -41,17 +41,12 @@ static char *prefixes[] = { "00", "010", "011", "1000", "1001", "1010", "1011",
 
 void put_entier(struct bitstream *b, unsigned int f)
 {
+	unsigned int n = nb_bits_utile(f);
+	if(n >= TAILLE(prefixes))
+		EXIT;
 
-
-
-
-
-
-
-
-
-
-
+	put_bit_string(b, prefixes[n]);
+	put_bits(b, n-1, f);
 }
 
 /*
@@ -65,38 +60,46 @@ void put_entier(struct bitstream *b, unsigned int f)
 
 unsigned int get_entier(struct bitstream *b)
 {
+	// Récupération du nombre de bits suivant le préfixe correspondant à l'entier
+	// Cas 0 et 1, retour direct du résultat
+	unsigned int n;
+	unsigned int v = get_bits(b, 2);
+	switch(v){
+		case 0 :
+			return 0;
+			break;
 
+		case 1 :
+			v = get_bits(b, 1);
+			if(v == 0){ // cas 1
+				return 1;
+			}
+			else{ // cas 2 et 3
+				n = 1;
+			}
+			break;
 
+		case 2 :
+			v = get_bits(b, 2);
+			n = 2 + v;
+			break;
 
+		case 3 :
+			v = get_bits(b, 3);
+			if(v != 7){ // cas 64 à 8191
+				n = 6 + v;
+			}
+			else{ // cas 8192 à 32767
+				v = get_bits(b, 1);
+				n = 13 + v;
+			}
+			break;
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	// Récupération des bits de l'entier
+	unsigned int res = get_bits(b, n);
+	res = pose_bit(res, n, 1);
+	return res ; 
 }
 
 /*
@@ -116,25 +119,28 @@ return 0 ; /* pour enlever un warning du compilateur */
 
 void put_entier_signe(struct bitstream *b, int i)
 {
+	int signe;
+	if(i < 0){
+		signe = 1;
+		i = -i - 1;
+	}
+	else
+		signe = 0;
 
-
-
-
-
-
-
-
-
-
+	put_bit(b, signe);
+	put_entier(b, i);
 }
 /*
  *
  */
 int get_entier_signe(struct bitstream *b)
 {
+	int signe = get_bit(b);
+	int entier = get_entier(b);
 
+	if(signe){
+		entier = -(entier + 1);
+	}
 
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	return entier; 
 }

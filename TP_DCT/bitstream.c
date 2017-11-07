@@ -1,6 +1,8 @@
 #include "bitstream.h"
 #include "exception.h"
 
+#include <stdio.h>
+
 /*
  * Le but de ce fichier est de fournir des fonctions permettant
  * d'écrire/lire un flot de bit, bit par bit dans ou à partir d'un fichier.
@@ -56,30 +58,31 @@ struct bitstream
 
 struct bitstream *open_bitstream(const char *fichier, const char* mode)
 {
+	struct bitstream *b;
+	ALLOUER(b, 1);
 
+	b->nb_bits_dans_buffer = 0;
+	if(mode[0] == 'r')
+		b->ecriture = Faux;
+	else
+		b->ecriture = Vrai;
 
+	if(fichier[0] == '-' && fichier[1] == '\0'){ // cas stdin / stdout
+		if(!b->ecriture)
+			b->fichier = stdin;
+		else 
+			b->fichier = stdout;
+	}
+	else{ // sinon, ouverture classique de fichier
+		b->fichier = fopen(fichier, mode);
+	}
 
+	if(b->fichier == NULL){
+		free(b);
+		EXCEPTION_LANCE(Exception_fichier_ouverture); 
+	}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	return b ;
 }
 
 /*
@@ -99,15 +102,20 @@ return 0 ; /* pour enlever un warning du compilateur */
 
 void flush_bitstream(struct bitstream *b)
 {
+	if(b == NULL){
+		EXCEPTION_LANCE(Exception_fichier_fermeture);
+		return;
+	}
 
+	if(!b->ecriture || !b->nb_bits_dans_buffer) // buffer vide
+		return;
 
+	if(fputc(b->buffer, b->fichier) == EOF){ // ecriture
+		EXCEPTION_LANCE(Exception_fichier_ecriture);
+		return;
+	}
 
-
-
-
-
-
-
+	b->nb_bits_dans_buffer = 0;
 }
 
 /*
@@ -121,14 +129,15 @@ void flush_bitstream(struct bitstream *b)
 
 void close_bitstream(struct bitstream *b)
 {
+	// vidage avant fermeture
+	flush_bitstream(b);
 
+	if(fclose(b->fichier)){ // fermeture
+		EXCEPTION_LANCE(Exception_fichier_fermeture);
+		return;
+	}
 
-
-
-
-
-
-
+	free(b);
 }
 
 /*
@@ -150,11 +159,16 @@ void close_bitstream(struct bitstream *b)
 
 void put_bit(struct bitstream *b, Booleen bit)
 {
+	if(!b->ecriture){
+		EXCEPTION_LANCE(Exception_fichier_ecriture_dans_fichier_ouvert_en_lecture);
+		return;
+	}
 
+	if(b->nb_bits_dans_buffer == NB_BITS) // buffer plein, vidage
+		flush_bitstream(b);
 
-
-
-
+	b-> buffer = pose_bit(b->buffer, NB_BITS - 1 - b->nb_bits_dans_buffer, bit);
+	b->nb_bits_dans_buffer++;
 }
 
 
@@ -183,20 +197,26 @@ void put_bit(struct bitstream *b, Booleen bit)
 
 Booleen get_bit(struct bitstream *b)
 {
+	if(b->ecriture){
+		EXCEPTION_LANCE(Exception_fichier_lecture_dans_fichier_ouvert_en_ecriture);
+		return 0;
+	}
 
+	if(b->nb_bits_dans_buffer == 0){ // buffer vide, remplissage
+		int val = fgetc(b->fichier);
+		if(val == EOF){
+			EXCEPTION_LANCE(Exception_fichier_lecture);
+			return 0;
+		}
 
+		b->buffer = val;
+		b->nb_bits_dans_buffer = NB_BITS;
+	}
 
+	Booleen bit = prend_bit(b->buffer, b->nb_bits_dans_buffer-1);
+	b->nb_bits_dans_buffer--;
 
-
-
-
-
-
-
-
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	return bit;
 }
 
 /*

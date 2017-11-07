@@ -10,10 +10,9 @@
 
 void put_bits(struct bitstream *b, unsigned int nb, unsigned long v)
 {
-
-
-
-
+	for (int i = nb-1; i >= 0; --i){ // Correction a faire pour les unsigned
+		put_bit(b, prend_bit(v, i));
+	}
 }
 
 
@@ -27,13 +26,13 @@ void put_bits(struct bitstream *b, unsigned int nb, unsigned long v)
 
 unsigned int get_bits(struct bitstream *b, unsigned int nb)
 {
-
-
-
-
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	// Autre solution : shéma de horner
+	unsigned int res = 0;
+	for (int i = nb - 1;  i >= 0; --i){ // correction à faire pour les unsigned
+		int bit = get_bit(b);
+		res = pose_bit(res, i, bit);
+	}
+	return res;
 }
 
 /*
@@ -46,6 +45,16 @@ return 0 ; /* pour enlever un warning du compilateur */
 
 void put_bit_string(struct bitstream *b, const char *bits)
 {
+	while( *bits )
+		put_bit(b, *bits++ != '0') ;
 
-
+	// int i = 0;
+	// char c;
+	// while((c = bits[i]) != '\0'){
+	// 	if(c == '0')
+	// 		put_bit(b, 0);
+	// 	else
+	// 		put_bit(b, 1);
+	// 	++i;
+	// }
 }

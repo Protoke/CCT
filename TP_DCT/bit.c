@@ -15,17 +15,13 @@
 
 unsigned int nb_bits_utile(unsigned long v)
 {
+	/* Cas normal, on compare v aux puissances de 2 successives pour 
+	trouver la première qui la dépasse */
 
-
-
-
-
-
-
-
-
-
-	return 0 ; /* pour enlever un warning du compilateur */
+	int i = 0 ;
+	while(v)
+	   { v /= 2 ; i++ ; }
+	return i ;
 }
 
 /*
@@ -50,11 +46,14 @@ unsigned int nb_bits_utile(unsigned long v)
 
 unsigned long pow2(Position_Bit position)
 {
+	return (unsigned long)1 << position ;
 
-
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	// unsigned long result = 1;
+	// for (Position_Bit i = 0; i < position; ++i)
+	// {
+	// 	result *= 2;
+	// }
+	// return result;
 }
 
 /*
@@ -70,8 +69,7 @@ Booleen prend_bit(unsigned long c,	     /* L'entier où on prend le bit */
 		  Position_Bit position	     /* La position du bit pris */
 		  )
 {
-
-return 0 ; /* pour enlever un warning du compilateur */
+	return !!(c & pow2(position));
 }
 
 /*
@@ -81,13 +79,14 @@ return 0 ; /* pour enlever un warning du compilateur */
  */
 
 unsigned long pose_bit(unsigned long c,	      /* Entier à modifier */
-		       Position_Bit position, /* Position du bit à modifié */
+		       Position_Bit position, /* Position du bit à modifier */
 		       Booleen      bit	      /* Nouvelle valeur du bit */
 		       )
 {
-
-
-
-
-return 0 ; /* pour enlever un warning du compilateur */
+	unsigned long positionValue = pow2(position);
+	
+	if(bit )
+		return c | positionValue;
+	else
+		return c & ~positionValue;
 }
